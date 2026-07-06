@@ -1,0 +1,50 @@
+{
+  "Technical Skills": [
+    "Python", "Java", "C++", "C#", "JavaScript", "TypeScript", "Ruby", "Go", "Rust", "Swift", "Kotlin", "PHP",
+    "SQL", "NoSQL", "PostgreSQL", "MySQL", "MongoDB", "Cassandra", "Redis", "Elasticsearch",
+    "HTML", "CSS", "Sass", "React", "Angular", "Vue.js", "Node.js", "Express.js", "Django", "Flask", "FastAPI",
+    "Spring Boot", "ASP.NET", "Ruby on Rails", "Laravel",
+    "Machine Learning", "Deep Learning", "Artificial Intelligence", "NLP", "Computer Vision",
+    "Data Science", "Data Engineering", "Big Data", "Hadoop", "Spark", "Kafka",
+    "TensorFlow", "PyTorch", "Scikit-Learn", "Keras", "Pandas", "NumPy", "Matplotlib", "Seaborn",
+    "Cloud Computing", "AWS", "Azure", "Google Cloud", "GCP",
+    "DevOps", "CI/CD", "Microservices", "RESTful APIs", "GraphQL", "SOAP",
+    "Networking", "Cybersecurity", "Penetration Testing", "Cryptography",
+    "Blockchain", "Smart Contracts", "Web3",
+    "Mobile Development", "iOS", "Android", "React Native", "Flutter", "Xamarin",
+    "Game Development", "Unity", "Unreal Engine",
+    "System Design", "Algorithms", "Data Structures", "Object-Oriented Programming", "Functional Programming",
+    "Agile Methodology", "Scrum", "Kanban", "Test-Driven Development", "TDD", "Behavior-Driven Development", "BDD"
+  ],
+  "Tools": [
+    "Git", "GitHub", "GitLab", "Bitbucket",
+    "Docker", "Kubernetes", "Terraform", "Ansible", "Chef", "Puppet",
+    "Jenkins", "CircleCI", "Travis CI", "GitHub Actions",
+    "Jira", "Trello", "Asana", "Confluence",
+    "VS Code", "IntelliJ IDEA", "Eclipse", "PyCharm", "WebStorm", "Vim", "Emacs",
+    "Postman", "Swagger", "Insomnia",
+    "Figma", "Sketch", "Adobe XD", "Photoshop", "Illustrator",
+    "Linux", "Unix", "Windows", "macOS", "Bash", "PowerShell",
+    "Tableau", "Power BI", "Looker", "Excel",
+    "Salesforce", "HubSpot", "Zendesk",
+    "Google Analytics", "Mixpanel", "Amplitude",
+    "Datadog", "New Relic", "Splunk", "Prometheus", "Grafana",
+    "Slack", "Microsoft Teams", "Zoom"
+  ],
+  "Soft Skills": [
+    "Communication", "Written Communication", "Verbal Communication", "Active Listening",
+    "Leadership", "Team Building", "Mentoring", "Coaching", "Conflict Resolution",
+    "Problem Solving", "Critical Thinking", "Analytical Skills", "Decision Making",
+    "Teamwork", "Collaboration", "Interpersonal Skills",
+    "Time Management", "Prioritization", "Organization", "Multitasking",
+    "Adaptability", "Flexibility", "Resilience", "Stress Management",
+    "Creativity", "Innovation", "Out-of-the-box Thinking",
+    "Emotional Intelligence", "Empathy", "Self-Awareness",
+    "Work Ethic", "Reliability", "Dependability", "Integrity",
+    "Customer Service", "Client Relations", "Negotiation", "Persuasion",
+    "Presentation Skills", "Public Speaking",
+    "Attention to Detail", "Accuracy",
+    "Project Management", "Strategic Planning",
+    "Continuous Learning", "Curiosity", "Self-Motivation"
+  ]
+}

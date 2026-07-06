@@ -1,0 +1,11 @@
+pandas
+nltk
+scikit-learn
+pdfplumber
+python-docx
+streamlit
+sentence-transformers
+anthropic
+python-dotenv
+spacy
+matplotlib
