@@ -5,7 +5,7 @@ pdfplumber
 python-docx
 streamlit
 sentence-transformers
-anthropic
+google-genai
 python-dotenv
 spacy
 matplotlib

@@ -20,7 +20,10 @@ def calculate_ats_score(cleaned_resume: str, cleaned_jd: str, weight_tfidf: floa
             "matched_skills": [],
             "missing_skills": [],
             "jd_skills": [],
-            "resume_skills": []
+            "resume_skills": [],
+            "tfidf_matched_words": [],
+            "semantic_only_matches": [],
+            "explainability_summary": "No text provided to analyze."
         }
         
     # 1. TF-IDF Cosine Similarity
@@ -28,6 +31,14 @@ def calculate_ats_score(cleaned_resume: str, cleaned_jd: str, weight_tfidf: floa
     vectors = vectorizer.fit_transform([cleaned_jd, cleaned_resume])
     cosine_sim = cosine_similarity(vectors[0], vectors[1])[0][0]
     tfidf_score = round(cosine_sim * 100, 2)
+    
+    # Extract TF-IDF matched keywords
+    feature_names = vectorizer.get_feature_names_out()
+    jd_vec = vectors[0].toarray()[0]
+    res_vec = vectors[1].toarray()[0]
+    matched_indices = [i for i in range(len(feature_names)) if jd_vec[i] > 0 and res_vec[i] > 0]
+    matched_words = sorted([(feature_names[i], res_vec[i]) for i in matched_indices], key=lambda x: x[1], reverse=True)
+    top_tfidf_words = [w[0] for w in matched_words[:10]]
         
     # 2. Semantic Similarity
     job_emb = semantic_model.encode(cleaned_jd, convert_to_tensor=True)
@@ -46,6 +57,28 @@ def calculate_ats_score(cleaned_resume: str, cleaned_jd: str, weight_tfidf: floa
         (skill_score * weight_skills), 
     2)
     
+    # 5. Semantic-Only Matches (Explainability)
+    missing_jd_skills = skill_metrics["missing_skills"]
+    unmatched_resume_skills = [s for s in skill_metrics["resume_skills"] if s not in skill_metrics["matched_skills"]]
+    
+    semantic_only_matches = []
+    if missing_jd_skills and unmatched_resume_skills:
+        jd_skill_embs = semantic_model.encode(missing_jd_skills, convert_to_tensor=True)
+        res_skill_embs = semantic_model.encode(unmatched_resume_skills, convert_to_tensor=True)
+        sim_matrix = util.cos_sim(jd_skill_embs, res_skill_embs)
+        
+        for i, jd_s in enumerate(missing_jd_skills):
+            for j, res_s in enumerate(unmatched_resume_skills):
+                if sim_matrix[i][j] > 0.65:
+                    semantic_only_matches.append(f"{res_s} ≈ {jd_s}")
+    
+    semantic_only_matches = list(set(semantic_only_matches))
+    
+    # 6. Summary
+    total_req = len(skill_metrics['jd_skills'])
+    found_req = len(skill_metrics['matched_skills'])
+    summary = f"This resume matched {len(matched_words)} keywords directly, with {len(semantic_only_matches)} conceptually related skills detected. It meets {found_req} out of {total_req} required skills."
+
     return {
         "final_score": final_score,
         "tfidf_score": tfidf_score,
@@ -54,5 +87,8 @@ def calculate_ats_score(cleaned_resume: str, cleaned_jd: str, weight_tfidf: floa
         "matched_skills": skill_metrics["matched_skills"],
         "missing_skills": skill_metrics["missing_skills"],
         "jd_skills": skill_metrics["jd_skills"],
-        "resume_skills": skill_metrics["resume_skills"]
+        "resume_skills": skill_metrics["resume_skills"],
+        "tfidf_matched_words": top_tfidf_words,
+        "semantic_only_matches": semantic_only_matches,
+        "explainability_summary": summary
     }

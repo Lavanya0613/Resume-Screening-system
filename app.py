@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 from src.resume_parser import extract_text
-from src.processor import clean_text
+from src.processor import clean_text, sanitize_for_bias
 from src.scorer import calculate_ats_score
 from src.llm_feedback import generate_feedback
 import pandas as pd
@@ -112,8 +112,14 @@ with st.sidebar:
         tfidf_weight /= total_weight
         semantic_weight /= total_weight
         skill_weight /= total_weight
+        
+    st.divider()
+    st.subheader("Fairness Options")
+    enable_bias_mitigation = st.checkbox("Score using bias-reduced text", help="Removes names, gendered pronouns, and university names before scoring to reduce unconscious bias.")
 
 # 5. LAYOUT & SPACING
+st.info("ℹ️ **Fairness & Bias:** This tool scores resumes based only on skills and job-relevant text. It does not use name, gender, age, or university prestige as scoring factors. Toggle 'bias-reduced scoring' in the sidebar to compare results with identifying details removed.")
+
 with st.container(border=True):
     col1, col2 = st.columns(2)
     
@@ -144,21 +150,36 @@ if st.button("🚀 Analyze Resumes", type="primary", use_container_width=True):
                     
                     score_data = calculate_ats_score(processed_text, processed_jd, tfidf_weight, semantic_weight, skill_weight)
                     
+                    bias_score = None
+                    if enable_bias_mitigation:
+                        sanitized_raw = sanitize_for_bias(raw_text)
+                        processed_sanitized = clean_text(sanitized_raw)
+                        bias_score_data = calculate_ats_score(processed_sanitized, processed_jd, tfidf_weight, semantic_weight, skill_weight)
+                        bias_score = bias_score_data["final_score"]
+                    
                     resumes_data.append({
                         "filename": file.name,
                         "raw_text": raw_text,
                         "processed_text": processed_text
                     })
                     
-                    results.append({
+                    result_entry = {
                         "Candidate / File": file.name,
                         "TF-IDF Score": score_data["tfidf_score"],
                         "Semantic Score": score_data["semantic_score"],
                         "Skill Score": score_data["skill_score"],
                         "Final ATS Score": score_data["final_score"],
                         "Matched Skills List": score_data["matched_skills"],
-                        "Missing Skills List": score_data["missing_skills"]
-                    })
+                        "Missing Skills List": score_data["missing_skills"],
+                        "TF-IDF Matched Words": score_data.get("tfidf_matched_words", []),
+                        "Semantic Only Matches": score_data.get("semantic_only_matches", []),
+                        "Explainability Summary": score_data.get("explainability_summary", "")
+                    }
+                    
+                    if enable_bias_mitigation:
+                        result_entry["Bias-Reduced Score"] = bias_score
+                        
+                    results.append(result_entry)
                     
                 except Exception as e:
                     st.error(f"Error processing {file.name}: {e}")
@@ -180,14 +201,21 @@ if 'results_df' in st.session_state:
         st.subheader("🏆 Candidate Rankings Overview")
         
         # 6. RANKING TABLE - Red to Green gradient
-        overview_df = st.session_state['results_df'][['Candidate / File', 'TF-IDF Score', 'Semantic Score', 'Skill Score', 'Final ATS Score']]
+        cols_to_show = ['Candidate / File', 'TF-IDF Score', 'Semantic Score', 'Skill Score', 'Final ATS Score']
+        format_dict = {
+            "TF-IDF Score": "{:.2f}%",
+            "Semantic Score": "{:.2f}%",
+            "Skill Score": "{:.2f}%",
+            "Final ATS Score": "{:.2f}%"
+        }
+        
+        if enable_bias_mitigation:
+            cols_to_show.append('Bias-Reduced Score')
+            format_dict['Bias-Reduced Score'] = "{:.2f}%"
+            
+        overview_df = st.session_state['results_df'][cols_to_show]
         st.dataframe(
-            overview_df.style.format({
-                "TF-IDF Score": "{:.2f}%",
-                "Semantic Score": "{:.2f}%",
-                "Skill Score": "{:.2f}%",
-                "Final ATS Score": "{:.2f}%"
-            }).background_gradient(subset=["Final ATS Score"], cmap="RdYlGn", vmin=0, vmax=100),
+            overview_df.style.format(format_dict).background_gradient(subset=["Final ATS Score"], cmap="RdYlGn", vmin=0, vmax=100),
             use_container_width=True
         )
     
@@ -204,8 +232,21 @@ if 'results_df' in st.session_state:
             
         with st.expander(f"{candidate_name} — Score: {final_score}%", expanded=(i==0)):
             # 3. SCORE DISPLAY
-            st.markdown(f"<div class='score-display' style='color:{color};'>{final_score}%</div>", unsafe_allow_html=True)
-            st.progress(min(int(final_score), 100))
+            if 'Bias-Reduced Score' in row and pd.notna(row['Bias-Reduced Score']):
+                bias_score = row['Bias-Reduced Score']
+                bias_color = get_score_color(bias_score)
+                sc1, sc2 = st.columns(2)
+                with sc1:
+                    st.markdown("**Original Score**")
+                    st.markdown(f"<div class='score-display' style='color:{color};'>{final_score}%</div>", unsafe_allow_html=True)
+                    st.progress(min(int(final_score), 100))
+                with sc2:
+                    st.markdown("**Bias-Reduced Score**")
+                    st.markdown(f"<div class='score-display' style='color:{bias_color};'>{bias_score}%</div>", unsafe_allow_html=True)
+                    st.progress(min(int(bias_score), 100))
+            else:
+                st.markdown(f"<div class='score-display' style='color:{color};'>{final_score}%</div>", unsafe_allow_html=True)
+                st.progress(min(int(final_score), 100))
             
             st.markdown("<br>", unsafe_allow_html=True)
             
@@ -214,6 +255,32 @@ if 'results_df' in st.session_state:
             m1.metric("TF-IDF Score", f"{row['TF-IDF Score']}%")
             m2.metric("Semantic Score", f"{row['Semantic Score']}%")
             m3.metric("Skill Score", f"{row['Skill Score']}%")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Explainability Panel
+            with st.container(border=True):
+                st.markdown("#### 🔍 Why this score?")
+                st.markdown(f"*{row['Explainability Summary']}*")
+                
+                ec1, ec2, ec3 = st.columns(3)
+                with ec1:
+                    st.markdown("**Top TF-IDF Keywords:**")
+                    if row['TF-IDF Matched Words']:
+                        st.write(", ".join(row['TF-IDF Matched Words']))
+                    else:
+                        st.write("None")
+                with ec2:
+                    st.markdown("**Semantic Concepts:**")
+                    if row['Semantic Only Matches']:
+                        for match in row['Semantic Only Matches']:
+                            st.write(f"- {match}")
+                    else:
+                        st.write("None")
+                with ec3:
+                    st.markdown("**Skill Overlap:**")
+                    total_req = len(row['Matched Skills List']) + len(row['Missing Skills List'])
+                    st.write(f"{len(row['Matched Skills List'])} out of {total_req} required skills found")
             
             st.markdown("<br>", unsafe_allow_html=True)
             
@@ -231,7 +298,7 @@ if 'results_df' in st.session_state:
             if st.button(f"Generate Insights for {candidate_name}", key=f"btn_ai_{i}", type="secondary"):
                 with st.spinner("Analyzing candidate strengths and gaps (this takes a few seconds)..."):
                     candidate_text = next(r['raw_text'] for r in st.session_state['resumes_data'] if r['filename'] == candidate_name)
-                    key_to_use = os.getenv("ANTHROPIC_API_KEY")
+                    key_to_use = os.getenv("GEMINI_API_KEY")
                     
                     feedback = generate_feedback(candidate_text, st.session_state['job_desc'], api_key=key_to_use)
                     

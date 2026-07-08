@@ -73,3 +73,15 @@ Open your browser to `http://localhost:8501` to use the system!
 
 *(Add a screenshot of your ranked candidate dashboard here!)*
 ![App Screenshot Placeholder](https://via.placeholder.com/800x400.png?text=AI+Resume+Screening+Dashboard)
+
+## Fairness & Bias Considerations
+
+In automated ATS systems, algorithms can inadvertently discriminate based on proxies for race, gender, or socioeconomic status (like names or university prestige). 
+
+To mitigate this, this project includes an optional **Bias-Reduced Scoring** mode.
+When toggled:
+- **Names** are stripped using Named Entity Recognition (spaCy).
+- **Gendered Pronouns** (he/she/him/her) are removed.
+- **Institution Names** (University/College) are generalized.
+
+**Limitations:** This is a basic proof-of-concept mitigation, not a comprehensive fairness audit. Machine learning models (especially semantic embeddings) can still infer demographics through subtle language proxies. Always pair AI screening with human review.
