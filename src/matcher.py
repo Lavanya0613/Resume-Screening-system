@@ -1,4 +1,5 @@
 import pandas as pd
+from typing import List, Dict
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer, util
@@ -7,7 +8,7 @@ from sentence_transformers import SentenceTransformer, util
 # 'all-MiniLM-L6-v2' is lightweight and fast
 semantic_model = SentenceTransformer('all-MiniLM-L6-v2')
 
-def compute_tfidf_similarity(job_desc: str, resumes: list[str]) -> list[float]:
+def compute_tfidf_similarity(job_desc: str, resumes: List[str]) -> List[float]:
     """
     Computes cosine similarity using TF-IDF.
     """
@@ -26,7 +27,7 @@ def compute_tfidf_similarity(job_desc: str, resumes: list[str]) -> list[float]:
     similarities = cosine_similarity(job_vector, resume_vectors).flatten()
     return similarities.tolist()
 
-def compute_semantic_similarity(job_desc: str, resumes: list[str]) -> list[float]:
+def compute_semantic_similarity(job_desc: str, resumes: List[str]) -> List[float]:
     """
     Computes cosine similarity using Sentence Transformers.
     Better for catching synonyms and related concepts.
@@ -42,7 +43,7 @@ def compute_semantic_similarity(job_desc: str, resumes: list[str]) -> list[float
     cosine_scores = util.cos_sim(job_embedding, resume_embeddings)[0]
     return cosine_scores.tolist()
 
-def rank_resumes(job_desc_processed: str, resumes_data: list[dict], weight_tfidf: float = 0.5, weight_semantic: float = 0.5) -> pd.DataFrame:
+def rank_resumes(job_desc_processed: str, resumes_data: List[Dict], weight_tfidf: float = 0.5, weight_semantic: float = 0.5) -> pd.DataFrame:
     """
     Takes the processed job description and a list of resume dictionaries.
     resume dictionary should have:
