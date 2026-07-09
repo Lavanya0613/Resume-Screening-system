@@ -15,11 +15,11 @@ SKILLS_FILE = os.path.join(os.path.dirname(__file__), 'skills.json')
 with open(SKILLS_FILE, 'r') as f:
     SKILLS_DATA = json.load(f)
 
-# Flatten skills for easier matching, store in a set (lowercase for case-insensitive matching)
-ALL_SKILLS = set()
-for category, skills in SKILLS_DATA.items():
-    for skill in skills:
-        ALL_SKILLS.add(skill.lower())
+# Map variants to canonical names (e.g., "ml" -> "Machine Learning")
+ALL_SKILLS = {}
+for canonical, variants in SKILLS_DATA.items():
+    for variant in variants:
+        ALL_SKILLS[variant.lower()] = canonical
 
 def extract_skills(cleaned_text: str) -> set:
     """
@@ -41,15 +41,19 @@ def extract_skills(cleaned_text: str) -> set:
             if ent.label_ in ['ORG', 'PRODUCT']:
                 # Filter out obvious noise (very short or very long entities)
                 if 2 < len(ent.text) < 20:
-                    found_skills.add(ent.text.lower())
+                    ent_text = ent.text.lower()
+                    if ent_text in ALL_SKILLS:
+                        found_skills.add(ALL_SKILLS[ent_text])
+                    else:
+                        found_skills.add(ent.text.title())
     
     # Regex matching against predefined skills database
-    for skill in ALL_SKILLS:
+    for variant, canonical in ALL_SKILLS.items():
         # Create a regex pattern with word boundaries. 
-        # Escape the skill in case it contains regex special chars (like C++)
-        pattern = r'\b' + re.escape(skill) + r'\b'
+        # Escape the variant in case it contains regex special chars (like C++)
+        pattern = r'\b' + re.escape(variant) + r'\b'
         if re.search(pattern, text_to_search, flags=re.IGNORECASE):
-            found_skills.add(skill)
+            found_skills.add(canonical)
             
     return found_skills
 
@@ -70,11 +74,11 @@ def match_skills(cleaned_resume: str, cleaned_jd: str) -> dict:
     else:
         overlap_percent = (len(matched_skills) / len(jd_skills)) * 100.0
         
-    # Title case the skills for better UI presentation
+    # Return the canonical skills natively without applying .title() which breaks casing like CI/CD
     return {
-        "jd_skills": [s.title() for s in jd_skills],
-        "resume_skills": [s.title() for s in resume_skills],
-        "matched_skills": [s.title() for s in matched_skills],
-        "missing_skills": [s.title() for s in missing_skills],
+        "jd_skills": sorted(list(jd_skills)),
+        "resume_skills": sorted(list(resume_skills)),
+        "matched_skills": sorted(list(matched_skills)),
+        "missing_skills": sorted(list(missing_skills)),
         "overlap_percentage": round(overlap_percent, 2)
     }

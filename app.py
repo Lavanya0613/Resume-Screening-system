@@ -1,5 +1,8 @@
 import streamlit as st
 import os
+import html
+import re
+import os
 from dotenv import load_dotenv
 from src.resume_parser import extract_text
 from src.processor import clean_text, sanitize_for_bias
@@ -92,6 +95,22 @@ def get_score_color(score):
         return "#f9ab00"  # Yellow
     else:
         return "#d93025"  # Red
+
+def highlight_keywords(text, keywords):
+    if not text:
+        return ""
+    escaped_text = html.escape(text)
+    
+    if not keywords:
+        return escaped_text.replace('\n', '<br>')
+        
+    sorted_keywords = sorted(keywords, key=len, reverse=True)
+    for kw in sorted_keywords:
+        if not kw.strip(): continue
+        pattern = re.compile(r'\b(' + re.escape(html.escape(kw)) + r')\b', re.IGNORECASE)
+        escaped_text = pattern.sub(r"<span style='background-color: rgba(74, 222, 128, 0.25); padding: 2px 4px; border-radius: 4px; font-weight: 500;'>\1</span>", escaped_text)
+        
+    return escaped_text.replace('\n', '<br>')
 
 st.title("📄 AI Resume Screening System")
 st.markdown("Automatically match resumes against job descriptions and generate AI-driven feedback.")
@@ -292,6 +311,13 @@ if 'results_df' in st.session_state:
             with c2:
                 st.markdown("#### ❌ Missing Skills")
                 render_skills(missing_list, "missing")
+                
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            with st.expander("📄 View Resume with Matched Keywords Highlighted"):
+                candidate_text = next(r['raw_text'] for r in st.session_state['resumes_data'] if r['filename'] == candidate_name)
+                highlighted_html = highlight_keywords(candidate_text, matched_list)
+                st.markdown(highlighted_html, unsafe_allow_html=True)
 
             st.markdown("<hr>", unsafe_allow_html=True)
             st.markdown("#### 🤖 AI Candidate Feedback")

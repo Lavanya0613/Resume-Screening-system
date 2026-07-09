@@ -1,16 +1,23 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from src.skill_matcher import match_skills
+import streamlit as st
 from sentence_transformers import SentenceTransformer, util
 
-# Load the Semantic model once
-semantic_model = SentenceTransformer('all-MiniLM-L6-v2')
+@st.cache_resource
+def get_semantic_model():
+    # model now loads once per session instead of once per interaction
+    with st.spinner("Loading AI Semantic Model (this only happens once)..."):
+        return SentenceTransformer('all-MiniLM-L6-v2')
 
+@st.cache_data
 def calculate_ats_score(cleaned_resume: str, cleaned_jd: str, weight_tfidf: float = 0.33, weight_semantic: float = 0.33, weight_skills: float = 0.34) -> dict:
     """
     Calculates a blended ATS score using TF-IDF, Semantic Similarity (Sentence Transformers),
     and skill overlap percentage.
     """
+    semantic_model = get_semantic_model()
+    
     if not cleaned_resume or not cleaned_jd:
         return {
             "final_score": 0.0,

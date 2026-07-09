@@ -85,3 +85,16 @@ When toggled:
 - **Institution Names** (University/College) are generalized.
 
 **Limitations:** This is a basic proof-of-concept mitigation, not a comprehensive fairness audit. Machine learning models (especially semantic embeddings) can still infer demographics through subtle language proxies. Always pair AI screening with human review.
+
+---
+
+## 🧪 Running Tests
+
+This project includes a comprehensive `pytest` suite to validate the core backend scoring and extraction logic. The tests use mocking to prevent heavy AI models (like sentence-transformers) from loading, ensuring the suite runs in milliseconds.
+
+To run the tests:
+
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
